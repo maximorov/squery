@@ -1,4 +1,4 @@
-package qb
+package squery
 
 import (
 	"strings"
