@@ -27,7 +27,7 @@ type Executor[E any] struct {
 	dst  E
 }
 
-func (r *Executor[E]) Iterate(ctx context.Context, stmt spanner.Statement, tx *spanner.ReadWriteTransaction) ([]E, error) {
+func (r *Executor[E]) RowsForStmt(ctx context.Context, stmt spanner.Statement, tx *spanner.ReadWriteTransaction) ([]E, error) {
 	var iter *spanner.RowIterator
 
 	if tx != nil {
@@ -49,7 +49,7 @@ func (r *Executor[E]) Iterate(ctx context.Context, stmt spanner.Statement, tx *s
 	})
 }
 
-func (r *Executor[E]) IterateAfterSq(ctx context.Context, sb SqSQLer, addArgs ...any) ([]E, error) {
+func (r *Executor[E]) Rows(ctx context.Context, sb SqSQLer, addArgs ...any) ([]E, error) {
 	sql, args, err := sb.ToSql()
 	if err != nil {
 		return nil, err
@@ -78,10 +78,10 @@ func (r *Executor[E]) IterateAfterSq(ctx context.Context, sb SqSQLer, addArgs ..
 		Params: params,
 	}
 
-	return r.Iterate(ctx, stmt, nil)
+	return r.RowsForStmt(ctx, stmt, nil)
 }
 
-func (r *Executor[E]) GetSingleRow(ctx context.Context, sb SqSQLer, addArgs ...any) (E, error) {
+func (r *Executor[E]) Col(ctx context.Context, sb SqSQLer, addArgs ...any) (E, error) {
 	sql, args, err := sb.ToSql()
 	if err != nil {
 		return r.dst, err
@@ -121,7 +121,7 @@ func (r *Executor[E]) GetSingleRow(ctx context.Context, sb SqSQLer, addArgs ...a
 	})
 }
 
-func (r *Executor[E]) RowAfterSq(ctx context.Context, sb SqSQLer) (*E, error) {
+func (r *Executor[E]) Row(ctx context.Context, sb SqSQLer) (*E, error) {
 	sql, args, err := sb.ToSql()
 	if err != nil {
 		return nil, err
@@ -138,11 +138,11 @@ func (r *Executor[E]) RowAfterSq(ctx context.Context, sb SqSQLer) (*E, error) {
 		Params: params,
 	}
 
-	return r.Row(ctx, stmt, nil)
+	return r.RowForStmt(ctx, stmt, nil)
 }
 
-func (r *Executor[E]) Row(ctx context.Context, stmt spanner.Statement, tx *spanner.ReadWriteTransaction) (*E, error) {
-	ents, err := r.Iterate(ctx, stmt, tx)
+func (r *Executor[E]) RowForStmt(ctx context.Context, stmt spanner.Statement, tx *spanner.ReadWriteTransaction) (*E, error) {
+	ents, err := r.RowsForStmt(ctx, stmt, tx)
 	if err != nil {
 		return nil, err
 	}
