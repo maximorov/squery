@@ -15,10 +15,9 @@ type Entity interface {
 	ToData() []any
 }
 
-func NewExecutor[E any](conn *spanner.Client, dst E) *Executor[E] {
+func NewExecutor[E any](conn *spanner.Client) *Executor[E] {
 	return &Executor[E]{
 		conn: conn,
-		dst:  dst,
 	}
 }
 
