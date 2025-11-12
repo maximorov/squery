@@ -7,25 +7,31 @@ import (
 	"cloud.google.com/go/spanner"
 )
 
+// SqSQLer is an interface for types that can be converted to a SQL query.
 type SqSQLer interface {
 	ToSql() (string, []interface{}, error)
 }
 
+// Entity is an interface for types that can be converted to a slice of any.
 type Entity interface {
 	ToData() []any
 }
 
+// NewExecutor creates a new Executor.
 func NewExecutor[E any](conn *spanner.Client) *Executor[E] {
 	return &Executor[E]{
 		conn: conn,
 	}
 }
 
+// Executor is a generic struct for executing SQL queries.
 type Executor[E any] struct {
 	conn *spanner.Client
 	dst  E
 }
 
+// RowsForStmt executes a query and returns a slice of results.
+// If a transaction is provided, it will be used for the query.
 func (r *Executor[E]) RowsForStmt(ctx context.Context, stmt spanner.Statement, tx *spanner.ReadWriteTransaction) ([]E, error) {
 	var iter *spanner.RowIterator
 
@@ -48,6 +54,8 @@ func (r *Executor[E]) RowsForStmt(ctx context.Context, stmt spanner.Statement, t
 	})
 }
 
+// Rows builds and executes a query, returning a slice of results.
+// Additional arguments can be provided as key-value pairs.
 func (r *Executor[E]) Rows(ctx context.Context, sb SqSQLer, addArgs ...any) ([]E, error) {
 	sql, args, err := sb.ToSql()
 	if err != nil {
@@ -80,6 +88,8 @@ func (r *Executor[E]) Rows(ctx context.Context, sb SqSQLer, addArgs ...any) ([]E
 	return r.RowsForStmt(ctx, stmt, nil)
 }
 
+// Col executes a query and returns a single column value.
+// Additional arguments can be provided as key-value pairs.
 func (r *Executor[E]) Col(ctx context.Context, sb SqSQLer, addArgs ...any) (E, error) {
 	sql, args, err := sb.ToSql()
 	if err != nil {
@@ -120,6 +130,7 @@ func (r *Executor[E]) Col(ctx context.Context, sb SqSQLer, addArgs ...any) (E, e
 	})
 }
 
+// Row builds and executes a query, returning a single row.
 func (r *Executor[E]) Row(ctx context.Context, sb SqSQLer) (*E, error) {
 	sql, args, err := sb.ToSql()
 	if err != nil {
@@ -140,6 +151,8 @@ func (r *Executor[E]) Row(ctx context.Context, sb SqSQLer) (*E, error) {
 	return r.RowForStmt(ctx, stmt, nil)
 }
 
+// RowForStmt executes a query and returns a single row.
+// If a transaction is provided, it will be used for the query.
 func (r *Executor[E]) RowForStmt(ctx context.Context, stmt spanner.Statement, tx *spanner.ReadWriteTransaction) (*E, error) {
 	ents, err := r.RowsForStmt(ctx, stmt, tx)
 	if err != nil {
